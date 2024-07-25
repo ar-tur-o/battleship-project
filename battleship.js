@@ -235,7 +235,6 @@ window.onload = () => {
     if (controller.guesses.has(cell)) return;
 
     guessInput.value = cell;
-    guessInput.focus();
 
     if (lastClickedCell === cell) controller.processGuess(guessVal());
 
