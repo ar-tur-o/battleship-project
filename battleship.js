@@ -246,6 +246,7 @@ window.onload = () => {
 
     controller.processGuess(guessVal());
     clearInput();
+    guessInput.focus(false)
     // ev.preventDefault();
     return false;
   };
