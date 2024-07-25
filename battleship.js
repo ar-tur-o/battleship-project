@@ -156,7 +156,7 @@ const controller = {
         .pushText(
           ` ${oldHiScore - score} up from your old score of ${oldHiScore}!`
         );
-    else view.writer.pushText(`Your hi-score is currently ${oldHiScore}.`);
+    else view.writer.pushText(` Your hi-score is currently ${oldHiScore}.`);
 
     view.writer
       .wait(2000)
