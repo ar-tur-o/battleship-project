@@ -3,6 +3,7 @@ const view = {
   messageArea: document.getElementById("messageArea"),
   lastMessage: "__",
   duplicateMessageCount: 0,
+  /** @returns {Typewriter} */
   displayMessage: function (message) {
     message = message.toString();
 
@@ -37,7 +38,7 @@ const view = {
         Math.min(this.duplicateMessageCount - 1, addendums.length - 1)
       ]();
 
-    wr.run();
+    return wr.run();
   },
   displayHit: (coord) =>
     document.getElementById(coord)?.setAttribute("class", "hit"),
@@ -46,10 +47,10 @@ const view = {
 };
 
 const model = {
+  win: false,
   boardSize: 7,
   shipsSunk: 0,
-
-  ships: genShips(7, [5, 4, 3, 3, 2]),
+  ships: [],
 
   /**
    * Hits any ship at the specified coordinate
@@ -69,10 +70,12 @@ const model = {
 
           view.lastMessage = "";
           view.writer
-            .popChar(1)
+            .cancel()
             .wait(500)
             .clear(25)
-            .pushText("You sank one of my ships ", 75)
+            .pushText("You...", 75)
+            .wait(200)
+            .pushText(" sank one of my ships ", 75)
             .wait(500)
             .pushText(":,(", 400)
             .run();
@@ -121,13 +124,26 @@ const controller = {
       .then((coord) => {
         let hit = model.fire(coord);
 
-        if (hit && model.shipsSunk === model.ships.length)
-          view.displayMessage(
-            `You sank all my ships in ${this.guesses.size} guesses!`
-          );
+        if (hit && model.shipsSunk === model.ships.length) this.winGame();
       })
       // display any errors that may happen
       .catch((reason) => alert(reason.toString()));
+  },
+  winGame: function () {
+    view.writer
+      .cancel()
+      .trigger(() => (model.win = true))
+      .clear(25)
+      .wait(500)
+      .pushText(`You sank all of my ships in ${this.guesses.size} guesses!`, 75)
+      .wait(2000)
+      .clear(25)
+      .wait(500)
+      .pushText("A new game will be initialized shortly...", 75)
+      .wait(500)
+      .clear(25)
+      .trigger(() => init())
+      .run();
   },
 };
 
@@ -176,8 +192,6 @@ function genShips(size, ships) {
     };
   });
 
-  console.log(JSON.stringify(out, null, 2));
-
   return out;
 }
 
@@ -193,19 +207,22 @@ window.onload = () => {
   let lastClickedCell = "";
 
   handleCellClick = (cell) => {
+    if (model.win) return;
+
     if (controller.guesses.has(cell)) return;
 
     guessInput.value = cell;
     guessInput.focus();
 
-    if (lastClickedCell === cell) {
-      controller.processGuess(guessVal());
-    }
+    // if (lastClickedCell === cell) controller.processGuess(guessVal());
+    if (true) controller.processGuess(guessVal());
 
     lastClickedCell = cell;
   };
 
   fireButton.onclick = (ev) => {
+    if (model.win) return;
+
     controller.processGuess(guessVal());
     clearInput();
     // ev.preventDefault();
@@ -213,6 +230,8 @@ window.onload = () => {
   };
 
   guessInput.onkeydown = (ev) => {
+    if (model.win) return;
+
     if (ev.key !== "Enter") return;
 
     controller.processGuess(guessVal());
@@ -223,34 +242,60 @@ window.onload = () => {
   };
 
   guessInput.focus();
+
+  init();
 };
 
-view.writer
-  .pushText("Welcome to battleship, ", 25)
-  .wait(200)
-  .pushText("commander!", 25)
+function init() {
+  // this resets all the cells classes
+  const rows = document.querySelector("#player-defense-table")?.rows;
+  if (!rows) {
+    return;
+  }
+  Array.from(rows).forEach((row) => {
+    const cells = Array.from(row.cells);
+    cells.forEach((cell) => {
+      cell.setAttribute("class", "");
+    });
+  });
 
-  .wait(1000)
-  .clear(25)
-  .wait(500)
-  .pushText("Enter your attack's corrdinate in the texbox in the corner", 25)
-  .wait(400)
-  .pushText(", or,", 25)
-  .wait(400)
-  .pushText(" double click a cell to reveal it!", 25)
+  // Reset model data
+  model.shipsSunk = 0;
+  model.ships = genShips(7, [5, 4, 3, 3, 2]);
+  model.win = false;
 
-  .wait(2000)
-  .clear(25)
-  .wait(500)
-  .pushText("Try to win with as little attacks as possible.", 25)
-  .wait(500)
-  .pushStrings([" Good", " Luck"], 500)
-  .wait(300)
-  .pushText(", commander!", 25)
-  
-  .wait(2000)
-  .clear(25)
-  
-  .wait(30_000)
-  .pushText("Are you just going to sit there, or what?", 25)
-  .run();
+  // reset controller data
+  controller.guesses = new Set();
+
+  // Print welcome message
+  view.writer
+    .cancel()
+    .clear(25)
+    .pushText("Welcome to battleship, ", 25)
+    .wait(200)
+    .pushText("commander!", 25)
+    .wait(1000)
+    .clear(25)
+    .wait(500)
+    .pushText("Enter your attack's corrdinate in the texbox in the corner", 25)
+    .wait(400)
+    .pushText(", or,", 25)
+    .wait(400)
+    .pushText(" double click a cell to reveal it!", 25)
+
+    .wait(2000)
+    .clear(25)
+    .wait(500)
+    .pushText("Try to win with as little attacks as possible.", 25)
+    .wait(500)
+    .pushStrings([" Good", " Luck"], 500)
+    .wait(300)
+    .pushText(", commander!", 25)
+
+    .wait(2000)
+    .clear(25)
+
+    .wait(30_000)
+    .pushText("Are you just going to sit there, or what?", 25)
+    .run();
+}

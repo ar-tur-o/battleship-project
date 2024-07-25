@@ -68,6 +68,7 @@
         height: 94px;
         background-color: transparent;
         transition: background-color 200ms ease;
+        animation: 500ms ease-out 200ms cell-init;
       }
 
       td:hover:not(.hit, .miss) {
@@ -90,6 +91,19 @@
         background: url("./miss.png") no-repeat center center;
         animation: 500ms ease-out miss-flash;
         position: relative;
+      }
+
+      @keyframes cell-init {
+        from {
+          transform: scale(50%);
+          background-color: var(--cell-hover-color);
+        }
+        75% {
+          background-color: transparent;
+        }
+        to {
+          transform: scale(100%);
+        }
       }
 
       @keyframes hit-flash {

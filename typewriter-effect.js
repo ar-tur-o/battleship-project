@@ -1,10 +1,11 @@
 /**
  * @callback done Callback to indicate the completion of a typewriter event
+ * @callback doo A callback used to start a function
  * @callback cancel A callback used to cancel a typewriter action
  *
  * @callback typewriterAction
  * @prop {done} done
- * @returns {cancel}
+ * @returns {[doo, cancel]}
  */
 
 class Typewriter {
@@ -24,10 +25,11 @@ class Typewriter {
    * @param {number} ms
    */
   wait(ms = 0) {
-    this.#actionQueue.push((done) => {
-      let timeoutID = setTimeout(() => done(), ms);
-      return () => clearTimeout(timeoutID);
-    });
+    let timeoutID;
+    this.#actionQueue.push([
+      (done) => (timeoutID = setTimeout(() => done(), ms)),
+      () => clearTimeout(timeoutID),
+    ]);
 
     return this;
   }
@@ -41,20 +43,26 @@ class Typewriter {
 
     const pushStr = () => (this.#target.innerText += strings.shift());
 
-    this.#actionQueue.push((done) => {
-      pushStr(); // first string has no delay
+    let intervalID;
 
-      let intervalID = setInterval(() => {
-        // stop if done
-        if (!strings.length) return done();
+    this.#actionQueue.push([
+      (done) => {
+        pushStr(); // first string has no delay
 
-        // else push another string
-        pushStr();
-      }, msPerString);
+        intervalID = setInterval(() => {
+          // stop if done
+          if (!strings.length) {
+            clearInterval(intervalID);
+            done();
+            return;
+          }
 
-      // Cancel action
-      return () => clearInterval(intervalID);
-    });
+          // else push another string
+          pushStr();
+        }, msPerString);
+      },
+      () => clearInterval(intervalID),
+    ]);
 
     return this;
   }
@@ -69,23 +77,21 @@ class Typewriter {
   }
 
   /**
-   * Calls func then waits for the completion of func aka a call to done()
-   * @param {typewriterAction} func
-   */
-  waitFor(func) {
-    this.#actionQueue.push((done) => func(done));
-    return this;
-  }
-
-  /**
    * Triggers the function, then moves onto the next action
    * @param {() => void} func
    */
   trigger(func) {
-    this.#actionQueue.push((done) => {
-      func;
-      return done();
-    });
+    let cancel = false;
+
+    this.#actionQueue.push([
+      (done) => {
+        if (cancel) return;
+        func();
+        done();
+      },
+      () => (cancel = true),
+    ]);
+
     return this;
   }
 
@@ -99,23 +105,29 @@ class Typewriter {
     const popChar = () =>
       (this.#target.innerText = text().substring(0, text().length - 1));
 
-    this.#actionQueue.push((done) => {
-      let remaining = Math.min(chars, text().length);
-      popChar(); // first char has no delay
-      remaining--;
+    let intervalID;
 
-      let intervalID = setInterval(() => {
-        // stop if done
-        if (remaining <= 0) return done();
-
-        // else pop another char
-        popChar();
+    this.#actionQueue.push([
+      (done) => {
+        let remaining = Math.min(chars, text().length);
+        popChar(); // first char has no delay
         remaining--;
-      }, msPerChar);
 
-      // Cancel action
-      return () => clearInterval(intervalID);
-    });
+        intervalID = setInterval(() => {
+          // stop if done
+          if (remaining <= 0) {
+            clearInterval(intervalID);
+            done();
+            return;
+          }
+
+          // else pop another char
+          popChar();
+          remaining--;
+        }, msPerChar);
+      },
+      () => clearInterval(intervalID),
+    ]);
 
     return this;
   }
@@ -129,20 +141,26 @@ class Typewriter {
     const popChar = () =>
       (this.#target.innerText = text().substring(0, text().length - 1));
 
-    this.#actionQueue.push((done) => {
-      popChar(); // first char has no delay
+    let intervalID;
 
-      let intervalID = setInterval(() => {
-        // stop if done
-        if (text().length <= 0) return done();
+    this.#actionQueue.push([
+      (done) => {
+        popChar(); // first char has no delay
 
-        // else pop another char
-        popChar();
-      }, msPerChar);
+        intervalID = setInterval(() => {
+          // stop if done
+          if (text().length <= 0) {
+            clearInterval(intervalID);
+            done();
+            return;
+          }
 
-      // Cancel action
-      return () => clearInterval(intervalID);
-    });
+          // else pop another char
+          popChar();
+        }, msPerChar);
+      },
+      () => clearInterval(intervalID),
+    ]);
 
     return this;
   }
@@ -152,16 +170,25 @@ class Typewriter {
    */
   run() {
     const runn = () => {
-      this.#currentActionCanceler = this.#actionQueue.shift()?.(() => {
-        this.#currentActionCanceler();
-        this.#isRunning = true;
-        if (this.#actionQueue.length) runn();
-        else this.#isRunning = false;
-      });
+      // Cancel the current action (if possible)
+      this.#currentActionCanceler?.();
+
+      // Return if there are no more actions left
+      let action = this.#actionQueue.shift();
+      if (!action) {
+        this.#isRunning = false;
+        return;
+      }
+
+      let [doo, cancel] = action;
+      this.#currentActionCanceler = cancel;
+      doo(runn);
     };
 
-    if (!this.#isRunning) runn();
-    
+    if (!this.#isRunning) {
+      this.#isRunning = true;
+      runn();
+    }
     return this;
   }
 
