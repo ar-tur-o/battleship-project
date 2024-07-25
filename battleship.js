@@ -231,7 +231,6 @@ window.onload = () => {
 
   handleCellClick = (cell) => {
     if (model.win) return;
-
     if (controller.guesses.has(cell)) return;
 
     guessInput.value = cell;
@@ -246,7 +245,7 @@ window.onload = () => {
 
     controller.processGuess(guessVal());
     clearInput();
-    guessInput.focus(false)
+    guessInput.focus();
     // ev.preventDefault();
     return false;
   };

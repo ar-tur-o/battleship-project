@@ -160,11 +160,10 @@
         document.getElementById("player-defense-table").innerHTML = genArray(
           7,
           (rowIndex) =>
-            `<tr>${genArray(
-              7,
-              (colIndex) =>
-                `<td id="${LETTERS[rowIndex]}${colIndex}" onclick="handleCellClick('${LETTERS[rowIndex]}${colIndex}')"></td>`
-            ).join("")}</tr>`
+            `<tr>${genArray(7, (colIndex) => {
+              const id = LETTERS[rowIndex] + colIndex.toString();
+              `<td id="${id}" ontouchstart="handleCellClick('${id}')" onclick="handleCellClick('${id}')"></td>`;
+            }).join("")}</tr>`
         ).join("");
       })();
     </script>
