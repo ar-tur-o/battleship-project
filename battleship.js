@@ -31,7 +31,7 @@ const view = {
     ];
 
     if (this.duplicateMessageCount === 0)
-      wr.cancel().popChar(3, 75).wait(500).clear(25).pushText(message, 75);
+      wr.cancel().wait(200).clear(25).wait(200).pushText(message, 75);
     else
       addendums[
         Math.min(this.duplicateMessageCount - 1, addendums.length - 1)
@@ -181,12 +181,29 @@ function genShips(size, ships) {
   return out;
 }
 
+let handleCellClick;
+
 window.onload = () => {
   let guessInput = document.getElementById("guessInput");
   let fireButton = document.getElementById("fireButton");
 
   const guessVal = () => guessInput.value;
   const clearInput = () => (guessInput.value = "");
+
+  let lastClickedCell = "";
+
+  handleCellClick = (cell) => {
+    if (controller.guesses.has(cell)) return;
+
+    guessInput.value = cell;
+    guessInput.focus();
+
+    if (lastClickedCell === cell) {
+      controller.processGuess(guessVal());
+    }
+
+    lastClickedCell = cell;
+  };
 
   fireButton.onclick = (ev) => {
     controller.processGuess(guessVal());
@@ -207,3 +224,33 @@ window.onload = () => {
 
   guessInput.focus();
 };
+
+view.writer
+  .pushText("Welcome to battleship, ", 25)
+  .wait(200)
+  .pushText("commander!", 25)
+
+  .wait(1000)
+  .clear(25)
+  .wait(500)
+  .pushText("Enter your attack's corrdinate in the texbox in the corner", 25)
+  .wait(400)
+  .pushText(", or,", 25)
+  .wait(400)
+  .pushText(" double click a cell to reveal it!", 25)
+
+  .wait(2000)
+  .clear(25)
+  .wait(500)
+  .pushText("Try to win with as little attacks as possible.", 25)
+  .wait(500)
+  .pushStrings([" Good", " Luck"], 500)
+  .wait(300)
+  .pushText(", commander!", 25)
+  
+  .wait(2000)
+  .clear(25)
+  
+  .wait(30_000)
+  .pushText("Are you just going to sit there, or what?", 25)
+  .run();

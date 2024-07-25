@@ -1,19 +1,28 @@
+/**
+ * @callback done Callback to indicate the completion of a typewriter event
+ * @callback cancel A callback used to cancel a typewriter action
+ *
+ * @callback typewriterAction
+ * @prop {done} done
+ * @returns {cancel}
+ */
+
 class Typewriter {
   #target;
   #actionQueue;
   #currentActionCanceler = undefined;
+  #isRunning = false;
 
   constructor(target) {
     /** @type {HTMLElement} */
     this.#target = target;
-    /**
-     * @callback done Called when then the function is done executing
-     * @callback cancel Called when the user wants to cancel the operation
-     * @type {((done) => cancel)[]}
-     */
+    /** @type {typewriterAction[]} */
     this.#actionQueue = [];
   }
 
+  /**
+   * @param {number} ms
+   */
   wait(ms = 0) {
     this.#actionQueue.push((done) => {
       let timeoutID = setTimeout(() => done(), ms);
@@ -54,10 +63,30 @@ class Typewriter {
    *
    * @param {string} string
    * @param {number} msPerChar
-   * @returns
    */
   pushText(string, msPerChar = 0) {
     return this.pushStrings(string.split(""), msPerChar);
+  }
+
+  /**
+   * Calls func then waits for the completion of func aka a call to done()
+   * @param {typewriterAction} func
+   */
+  waitFor(func) {
+    this.#actionQueue.push((done) => func(done));
+    return this;
+  }
+
+  /**
+   * Triggers the function, then moves onto the next action
+   * @param {() => void} func
+   */
+  trigger(func) {
+    this.#actionQueue.push((done) => {
+      func;
+      return done();
+    });
+    return this;
   }
 
   /**
@@ -95,17 +124,43 @@ class Typewriter {
    * @param {number} msPerChar
    */
   clear(msPerChar = 0) {
-    return this.popChar(999_999_999, msPerChar);
+    const text = () => this.#target.innerText;
+
+    const popChar = () =>
+      (this.#target.innerText = text().substring(0, text().length - 1));
+
+    this.#actionQueue.push((done) => {
+      popChar(); // first char has no delay
+
+      let intervalID = setInterval(() => {
+        // stop if done
+        if (text().length <= 0) return done();
+
+        // else pop another char
+        popChar();
+      }, msPerChar);
+
+      // Cancel action
+      return () => clearInterval(intervalID);
+    });
+
+    return this;
   }
 
   /**
    * Runs all the actions in the action queue
    */
   run() {
-    this.#currentActionCanceler = this.#actionQueue.shift()?.(() => {
-      this.#currentActionCanceler();
-      this.run();
-    });
+    const runn = () => {
+      this.#currentActionCanceler = this.#actionQueue.shift()?.(() => {
+        this.#currentActionCanceler();
+        this.#isRunning = true;
+        if (this.#actionQueue.length) runn();
+        else this.#isRunning = false;
+      });
+    };
+
+    if (!this.#isRunning) runn();
   }
 
   /**
@@ -113,6 +168,7 @@ class Typewriter {
    */
   cancel(clearQueue = true) {
     this.#currentActionCanceler?.();
+    this.#isRunning = false;
     if (clearQueue) this.#actionQueue = [];
     return this;
   }

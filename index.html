@@ -5,6 +5,17 @@
     <title>Battleship</title>
     <script src="./utils.js"></script>
     <style>
+      :root {
+        --panel-color: rgb(83, 175, 19);
+        --panel-color-light: rgb(152, 207, 113);
+        --border-color: rgb(55, 100, 23);
+
+        --cell-miss-flash-color: rgb(236, 26, 61);
+        --cell-hit-flash-color: var(--panel-color-light);
+        --cell-hover-color: rgba(152, 207, 113, 0.5);
+        --cell-click-color: rgba(55, 100, 23, 0.5);
+      }
+
       body {
         background-color: black;
       }
@@ -23,9 +34,25 @@
         top: 0px;
         left: 0px;
         right: 0px;
-        color: rgb(83, 175, 19);
+        color: var(--panel-color-light);
         font-family: "Courier New", Courier, monospace;
-        font-size: 3em;
+        font-size: 2em;
+      }
+
+      form {
+        position: absolute;
+        bottom: 0px;
+        right: 0px;
+        padding: 15px;
+        background-color: var(--panel-color);
+      }
+
+      form input {
+        background-color: var(--panel-color-light);
+        border-color: var(--border-color);
+        color: var(--border-color);
+        font-family: "Courier New", Courier, monospace;
+        font-size: 1em;
       }
 
       table {
@@ -36,31 +63,59 @@
       }
 
       td {
+        border-radius: 10px;
         width: 94px;
         height: 94px;
+        background-color: transparent;
+        transition: background-color 200ms ease;
       }
 
-      form {
-        position: absolute;
-        bottom: 0px;
-        right: 0px;
-        padding: 15px;
-        background-color: rgb(83, 175, 19);
+      td:hover:not(.hit, .miss) {
+        cursor: pointer;
+        background-color: var(--cell-hover-color);
       }
 
-      form input {
-        background-color: rgb(152, 207, 113);
-        border-color: rgb(83, 175, 19);
-        font-family: "Courier New", Courier, monospace;
-        font-size: 1em;
+      td:active:not(.hit, .miss) {
+        cursor: grabbing;
+        background-color: var(--cell-click-color);
       }
 
       .hit {
         background: url("./ship.png") no-repeat center center;
+        animation: 500ms ease-out hit-flash;
       }
 
       .miss {
+        background-color: transparent;
         background: url("./miss.png") no-repeat center center;
+        animation: 500ms ease-out miss-flash;
+        position: relative;
+      }
+
+      @keyframes hit-flash {
+        from {
+          transform: scale(50%);
+          background-color: var(--cell-hit-flash-color);
+        }
+        75% {
+          background-color: transparent;
+        }
+        to {
+          transform: scale(100%);
+        }
+      }
+
+      @keyframes miss-flash {
+        from {
+          transform: scale(50%);
+          background-color: var(--cell-miss-flash-color);
+        }
+        75% {
+          background-color: transparent;
+        }
+        to {
+          transform: scale(100%);
+        }
       }
     </style>
   </head>
@@ -86,7 +141,8 @@
           (rowIndex) =>
             `<tr>${genArray(
               7,
-              (colIndex) => `<td id="${LETTERS[rowIndex]}${colIndex}"></td>`
+              (colIndex) =>
+                `<td id="${LETTERS[rowIndex]}${colIndex}" onclick="handleCellClick('${LETTERS[rowIndex]}${colIndex}')"></td>`
             ).join("")}</tr>`
         ).join("");
       })();
