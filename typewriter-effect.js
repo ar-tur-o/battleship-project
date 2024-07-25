@@ -161,6 +161,8 @@ class Typewriter {
     };
 
     if (!this.#isRunning) runn();
+    
+    return this;
   }
 
   /**
