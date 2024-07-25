@@ -162,7 +162,7 @@
           (rowIndex) =>
             `<tr>${genArray(7, (colIndex) => {
               const id = LETTERS[rowIndex] + colIndex.toString();
-              `<td id="${id}" ontouchstart="handleCellClick('${id}')" onclick="handleCellClick('${id}')"></td>`;
+              return `<td id="${id}" ontouchstart="handleCellClick('${id}')" onclick="handleCellClick('${id}')"></td>`;
             }).join("")}</tr>`
         ).join("");
       })();
