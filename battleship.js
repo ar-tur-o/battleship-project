@@ -299,7 +299,7 @@ function init() {
     .wait(1000)
     .clear()
     .wait()
-    .pushText("Enter your attack's corrdinate in the texbox in the corner")
+    .pushText("Enter your attack's coordinate in the texbox in the corner")
     .wait()
     .pushText(", or,")
     .wait()
