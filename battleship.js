@@ -1,5 +1,9 @@
 const view = {
-  writer: new Typewriter(document.getElementById("messageArea")),
+  writer: new Typewriter(document.getElementById("messageArea"), {
+    defaultDelCpm: 20,
+    defaultTypeCpm: 30,
+    defaultWaitMs: 500,
+  }),
   messageArea: document.getElementById("messageArea"),
   lastMessage: "__",
   duplicateMessageCount: 0,
@@ -15,24 +19,24 @@ const view = {
     let wr = this.writer;
 
     let addendums = [
-      () => wr.wait(500).pushText(" again...", 75),
+      () => wr.wait().pushText(" again..."),
       () =>
         wr
-          .wait(500)
-          .pushText(" three times in a row??", 75)
-          .wait(500)
+          .wait()
+          .pushText(" three times in a row??")
+          .wait()
           .pushStrings([" come", " on"], 500)
           .pushText("...", 200),
       () =>
         wr
-          .wait(500)
-          .pushText(` ${this.duplicateMessageCount} times? `, 75)
-          .wait(500)
-          .pushText("really?", 50),
+          .wait()
+          .pushText(` ${this.duplicateMessageCount + 1} times? `)
+          .wait()
+          .pushText("really?"),
     ];
 
     if (this.duplicateMessageCount === 0)
-      wr.cancel().wait(200).clear(25).wait(200).pushText(message, 75);
+      wr.cancel().wait(200).clear().wait(200).pushText(message);
     else
       addendums[
         Math.min(this.duplicateMessageCount - 1, addendums.length - 1)
@@ -48,6 +52,7 @@ const view = {
 
 const model = {
   win: false,
+  hiScore: 999,
   boardSize: 7,
   shipsSunk: 0,
   ships: [],
@@ -71,12 +76,12 @@ const model = {
           view.lastMessage = "";
           view.writer
             .cancel()
-            .wait(500)
-            .clear(25)
-            .pushText("You...", 75)
+            .wait()
+            .clear()
+            .pushText("You...")
             .wait(200)
-            .pushText(" sank one of my ships ", 75)
-            .wait(500)
+            .pushText(" sank one of my ships ")
+            .wait()
             .pushText(":,(", 400)
             .run();
         } else view.displayMessage("HIT!!");
@@ -130,18 +135,36 @@ const controller = {
       .catch((reason) => alert(reason.toString()));
   },
   winGame: function () {
+    let score = this.guesses.size;
+    let oldHiScore = model.hiScore;
+
+    view.writer.cancel();
+    model.win = true;
+    model.hiScore = Math.min(score, oldHiScore);
+
     view.writer
       .cancel()
-      .trigger(() => (model.win = true))
-      .clear(25)
-      .wait(500)
-      .pushText(`You sank all of my ships in ${this.guesses.size} guesses!`, 75)
+      .clear()
+      .wait()
+      .pushText(`You sank all of my ships in ${score} guesses!`)
+      .wait(200);
+
+    if (score < oldHiScore)
+      view.writer
+        .pushText(" Thats a new hi-score,")
+        .wait(200)
+        .pushText(
+          ` ${oldHiScore - score} up from your old score of ${oldHiScore}!`
+        );
+    else view.writer.pushText(`Your hi-score is currently ${oldHiScore}.`);
+
+    view.writer
       .wait(2000)
-      .clear(25)
-      .wait(500)
-      .pushText("A new game will be initialized shortly...", 75)
-      .wait(500)
-      .clear(25)
+      .clear()
+      .wait()
+      .pushText("A new game will be initialized shortly...")
+      .wait()
+      .clear()
       .trigger(() => init())
       .run();
   },
@@ -214,8 +237,7 @@ window.onload = () => {
     guessInput.value = cell;
     guessInput.focus();
 
-    // if (lastClickedCell === cell) controller.processGuess(guessVal());
-    if (true) controller.processGuess(guessVal());
+    if (lastClickedCell === cell) controller.processGuess(guessVal());
 
     lastClickedCell = cell;
   };
@@ -270,32 +292,32 @@ function init() {
   // Print welcome message
   view.writer
     .cancel()
-    .clear(25)
-    .pushText("Welcome to battleship, ", 25)
+    .clear()
+    .pushText("Welcome to battleship, ")
     .wait(200)
-    .pushText("commander!", 25)
+    .pushText("commander!")
     .wait(1000)
-    .clear(25)
-    .wait(500)
-    .pushText("Enter your attack's corrdinate in the texbox in the corner", 25)
-    .wait(400)
-    .pushText(", or,", 25)
-    .wait(400)
-    .pushText(" double click a cell to reveal it!", 25)
+    .clear()
+    .wait()
+    .pushText("Enter your attack's corrdinate in the texbox in the corner")
+    .wait()
+    .pushText(", or,")
+    .wait()
+    .pushText(" double click a cell to reveal it!")
 
     .wait(2000)
-    .clear(25)
-    .wait(500)
-    .pushText("Try to win with as little attacks as possible.", 25)
-    .wait(500)
+    .clear()
+    .wait()
+    .pushText("Try to win with as little attacks as possible.")
+    .wait()
     .pushStrings([" Good", " Luck"], 500)
-    .wait(300)
-    .pushText(", commander!", 25)
+    .wait()
+    .pushText(", commander!")
 
     .wait(2000)
-    .clear(25)
+    .clear()
 
     .wait(30_000)
-    .pushText("Are you just going to sit there, or what?", 25)
+    .pushText("Are you just going to sit there, or what?")
     .run();
 }

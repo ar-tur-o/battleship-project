@@ -8,23 +8,42 @@
  * @returns {[doo, cancel]}
  */
 
+/**
+ * @typedef TypewriterOptions
+ * @prop {number} defaultTypeCpm The default miliseconds per char for typing
+ * @prop {number} defaultDelCpm The default miliseconds per char for deleting
+ * @prop {number} defaultWaitMs The default duration of a pause
+ */
+
 class Typewriter {
   #target;
   #actionQueue;
   #currentActionCanceler = undefined;
   #isRunning = false;
 
-  constructor(target) {
+  /**
+   *
+   * @param {*} target
+   * @param {TypewriterOptions} options
+   */
+  constructor(target, options = {}) {
     /** @type {HTMLElement} */
     this.#target = target;
     /** @type {typewriterAction[]} */
     this.#actionQueue = [];
+
+    options.defaultDelCpm ??= 20;
+    options.defaultTypeCpm ??= 30;
+    options.defaultWaitMs ??= 500;
+    /** @type {TypewriterOptions} */
+    this.options = options;
   }
 
   /**
-   * @param {number} ms
+   * @param {number?} ms
    */
-  wait(ms = 0) {
+  wait(ms) {
+    ms ??= this.options.defaultWaitMs;
     let timeoutID;
     this.#actionQueue.push([
       (done) => (timeoutID = setTimeout(() => done(), ms)),
@@ -36,9 +55,11 @@ class Typewriter {
 
   /**
    * @param {string[]} strings the string to push
-   * @param {number} msPerString the miliseconds between each char push
+   * @param {number?} msPerString the miliseconds between each char push
    */
-  pushStrings(strings, msPerString = 0) {
+  pushStrings(strings, msPerString) {
+    msPerString ??= this.options.defaultTypeCpm;
+
     strings = strings.slice(0);
 
     const pushStr = () => (this.#target.innerText += strings.shift());
@@ -70,10 +91,13 @@ class Typewriter {
   /**
    *
    * @param {string} string
-   * @param {number} msPerChar
+   * @param {number?} msPerChar
    */
-  pushText(string, msPerChar = 0) {
-    return this.pushStrings(string.split(""), msPerChar);
+  pushText(string, msPerChar) {
+    return this.pushStrings(
+      string.split(""),
+      msPerChar ?? this.options.defaultTypeCpm
+    );
   }
 
   /**
@@ -97,9 +121,11 @@ class Typewriter {
 
   /**
    * @param {number} chars the number of chars to pop
-   * @param {number} msPerChar the miliseconds wait between char pops
+   * @param {number?} msPerChar the miliseconds wait between char pops
    */
-  popChar(chars, msPerChar = 0) {
+  popChar(chars, msPerChar) {
+    msPerChar ??= this.options.defaultDelCpm;
+
     const text = () => this.#target.innerText;
 
     const popChar = () =>
@@ -133,9 +159,10 @@ class Typewriter {
   }
 
   /**
-   * @param {number} msPerChar
+   * @param {number?} msPerChar
    */
-  clear(msPerChar = 0) {
+  clear(msPerChar) {
+    msPerChar ??= this.options.defaultDelCpm;
     const text = () => this.#target.innerText;
 
     const popChar = () =>
